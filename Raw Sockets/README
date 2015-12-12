@@ -1,0 +1,96 @@
+Project 4 - RAW Sockets
+
+Team - Nikhil Kumar Singh,Anuj Thakur
+
+Email - singh.nikh@husky.neu.edu,thakur.an@husky.neu.edu
+
+Objective - The goal of this assignment is to implement the low-level operations of the Internet protocol stack. 
+	    The rawhttpget program takes a URL on the command line and downloads the associated file. 
+            The program is responsible for building the IP and TCP headers in each packet. 
+	    In short the program rebuilds the operating system's TCP/IP stack using Python.
+
+Prerequisite - 
+	
+	1. The following command should be executed as a root user before running the code
+			
+		iptables -A OUTPUT -p tcp --tcp-flags RST RST -j DROP
+
+	2. The program should be executed as a root user otherwise socket will not be created.
+
+Working - 
+	
+	1.  The high level approach that we have followed is to divide the functionality over several Python programs. 
+        2.  The rawhttpget is the main program which starts by requesting the destination address for threeway handshake
+	3.  We choose the port and the sequence number randomly for data transmission
+	4.  The rawhttget file starts by parsing the URL given as in argument while invoking the program
+	5.  In case of any error in the URL give, an error is printed and the program is exited. 
+	6.  Also If the URL contains no file name but a '/' in the end in that case the default file Index.html is fetched.
+	7.  Once the URL is parsed, a socket is created to get the IP address of destination and the source using the
+	    inbuilt functions.
+	8.  The IP addresses are set in the IP headers while creating a packet
+	9.  Once the receiving and the send sockets have been created successfully,the program initiates TCP handshake using 
+	    tcp_handshake_syn() function.
+	10. This method sends a SYN packet to the server to request a three way handshake,in case the packet is not acked within a minute
+	    a new packet is retransmitted to the server.
+	11. Once the server sends the SYN ACK Packet, the send_req() function is invoked which sets the PSH flag to 1 and sends the HTTP request
+	    in the same packet as well.
+        12. In case the request is not acked within a minute, the packet is retransmitted
+	13. The clients than starts reading the data based on the sequence number it expects
+	14. The program acks all packets having the sequence number greater than or equal to the sequence number used by the server during the handshake
+	15. The program isolated relevant packets based on the sequence number at the time of handshake ,source and destination IP addresses and ports
+	16. The validation of IP header is done by calculating the checksum for incoming headers, it should be equal to 0.
+	17. The validation of TCP header is done by opening the packet received and then creating the pseudo header and then calculating the checksum
+            It is done in the same exact way as the calculation is done while creating the TCP segment.
+	18. The advertised window is always set at a constant value since the assignment says that we can handle it in any way.
+	19. The file is saved on the run based on the sequence of the packet received.
+	20. The inorder delivery is handled based on the sequence numbers by saving the values in a dictionary where the key is the sequence number and the 
+	    value is the length of the data.
+	21. While creating the file the sequence number at the time of handshake is used to fetch the data from the dictionary and based on the length of the data
+	    in the value, the next packet is chosen and so on to create the final file.
+	22. The connection tear down is handled based on the size of the last packet received and the FIN flag, once the FIN Flag is received the packet is acked with +1 sequence number.
+ 
+	
+Tasks - 
+	
+	1. Nikhil - 1. Creation of TCP headers and IP headers
+		    2. Creation of code to parse the incoming packets to retrieve data and header values
+		    3. Parsing command line argument
+		    4. Checksum verification
+		    5. Modularizing code into several modules
+		    6. Adding comments wherever necessary
+		
+				
+	2. Anuj - 1. Socket creation
+		  2. Output file creation from the packets
+		  3. Parsing the HTTP response from the first packet
+		  4. Debugged the Threeway handshake issue
+		  5. Testing
+   	          6. Adding comments wherever necessary
+		
+
+Challenges - 
+
+	1. Implementing three way handshake
+		- Problem was with incorrect setting of checksum in the header due to which the server was not sending the SYN ACK Packet. Resolved by using Wireshark
+	2. Handling the in order delivery of packets
+		- Problem was due to the fact that the first packet had 6 padded zeros due to which the packet was getting added to file, the first packet was ignored and the problem was solved.
+	3. Checksum calculation of odd length user data
+		- Problem when downloading 2MB log file, resolved by adding /x00 in the end of the header while calculating the checksum
+	4. Checksum verification for TCP header
+		- Checksum verification was getting failed due to incorrect pseudo header
+	5. Saving data in the correct order in the file
+		- The data was not getting retrieved from the correct packet due to the incorrect sequence number expectation since the Data length calculation was incorrect due to 1st challenge 
+
+Testing - 
+	The checksum function of the code was tested with different sets of input within its acceptable values.
+	To check the whether the content of the packet being sent is appropriate or not wget was used to download 
+	the file and observe the sequence of communication between the source and destination. This was then compared
+	to the communication taking place when our program requested the page. The Sequence number of all the packets
+	that were accepted were printed in the command line to ensure that the program was accepting the packets inorder.
+	The file downloaded by our program was compared to the file downloaded by wget command using md5 checksum and 
+	diff command. This was to done to make sure that all the file that is downloaded is exactly what is expected.
+	This also ensures that all the packets were received properly. Values of various variables were printed on 
+	command line to verify that the expected value is produced by the program.
+
+
+ 

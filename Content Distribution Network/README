@@ -1,0 +1,71 @@
+OBJECTIVE:
+The main tasks of the program are:
+1. Creation a DNS server
+2. Creation of HTTP server
+3. Mapping clients with good replica servers(not completed)
+
+WORKING:
+1. DNS Server :
+	On receiving the DNS request packet, all the fields of the DNS packet was unpacked.
+	In the response of the DNS packet the flag field depends upon the flag sent in the reponse.
+	The answer section for this milestone contains the question name, type and other fields as per 
+	the structure of the DNS packet, the data field of the answer contains an IP address which is
+	static for all the response. 
+	The domain name given while starting the server and in the dig command should be the same. Only
+	then will the server reponse to the request.
+
+	DNS server uses geographical location to select from the list of the replica server. 
+	Local instance of freegeoip is run on port 43456. The address of the client is received through the recvfrom message. 
+	This IP address is sent as part of the query to the freegeoip instance asking for JSON object in return. 
+	The JSON object returned then is used to extract the values necessary such as the longitude and latitude. 
+	The distance between all the replica server and the client is calculated using distance formula. 
+	As stated in the project description correcting for the distance between Web clients and their DNS servers. 
+
+2. HTTP Server:
+	For HTTP server, we have selected a multithreaded approach using the BaseHTTPServer module of python. 
+	This is basically done to achieve high performance at the time of multiple requests.
+	Once a get request is recieved, the server checks if the file is in the cache dictionary,
+	if the filename is in the cache dictionary it means that the file is present in the cache, 
+ 	ater that it is fetched from the disk and returned to the client and the frequency count of that
+	file in the cache is incremented by 1. In case when the file file is not present in the cache, the 
+	file is fetched from the server and the cache update function of cache handler class is invoked to 
+	updated the cache. The cache is updated by removing the least frequently called file from the disk and
+	writing a new file incase the size of cache does not exceed 10MB total size otherwise the cache is not 
+	updated.
+
+CHALLENGES:
+1. DNS Server:
+	1. Debugging the code was challenging as the reason why the packet being sent was malformed 
+    	   was quite challenging to find. Proper step by step analysis of the packet sent had to be done. 
+	2. While deploying the server and testing it, we found a very unusual problem with the freegeoip instance. 
+	   The Kernel was killing the FreeGeoIp Process, thus making the program unable to extract the location of the client, 
+           we had handle this by checking for the process id of freegeoip process and restarting the instance if this check returned a exception.
+
+2. HTTP Server:
+	1. Implementing a multi threaded program was a challenge in python due to no pervious experience in such 
+	   a task. We had to learn the multithreading approach for Python before implementing
+	2. Cache replacement strategy had multiple ways. We tried multiple methods to build the cache, 
+	   for example by using compressed file and non compressed file, we finally decided to go with 
+	   uncompressed solution since the I/O operations are many times faster using uncompressed data 
+           while compression saves 1/3rd space but leads to variable access time. A proof of concept module 
+           was implemented before choosing the right strategy
+
+Technique for finding the best replica server :
+	In this project we have implemented Geolocation based replica finding technique where the replica which is closest to the client is returned as the
+	DNS response. Also the distance calculation is done by simple geometric calculation based on the latitude and longitude of the servers and the client.
+
+
+Technique for Zipf content distribution :
+	Our project implements a simple technique which is based on the fact that we implemented a simple dictionary which keeps the content and its request frequency. Everytime a new file is asked for
+	we simple create an entry in the dictionary, if the file is already served once before then only the frequency is incremented.
+
+
+TESTING:
+Both DNS and HTTP servers have been tested on DNS specific and HTTP replica servers by using DIG and WGET respectively,
+The performance difference while getting data from cache was significant and also the multiple request we getting responses
+in short period of time. The code was tested on personal servers as well during unit testing phase.
+
+TEAM TASK:
+
+1. DNS Server,FreegeoIP - Anuj Thakur
+2. HTTP Server,Cache strategy - Nikhil Singh
